@@ -58,7 +58,6 @@
 - (void)viewDidAppear:(BOOL)animated {
     
     self.rectView = [[PointsSpreadView alloc] initWithFrame:CGRectMake(0, 150, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.width/16*9)];
-    self.rectView.backgroundColor = [UIColor lightGrayColor];
     self.rectView.delegate = self;
     [self.view addSubview:self.rectView];
 
