@@ -8,13 +8,16 @@
 
 #import "TestViewController.h"
 #import "PointsSpreadView.h"
-@interface TestViewController ()
+@interface TestViewController ()<PointSpreadViewProtocol>
 @property (nonatomic, strong) UIWindow* window;
 @property (nonatomic, strong) PointsSpreadView *rectView;
 @property (nonatomic, strong) UIButton *clearAllPointsBtn;
 @property (nonatomic, strong) UIButton *createAreaBtn;
 @property (nonatomic, strong) UIButton *removeSelectPointBtn;
 @property (nonatomic, strong) UIImageView *imageView;
+@property (nonatomic, strong) UILabel *pointsLabel;
+
+
 
 @end
 
@@ -43,20 +46,24 @@
     [self.createAreaBtn setTitleColor:[UIColor blueColor] forState:UIControlStateNormal];
     [self.createAreaBtn addTarget:self action:@selector(createAreaHandle) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.createAreaBtn];
-    
+    _imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 150, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.width/16*9)];
+    _imageView.image = [UIImage imageNamed:@"Hot"];
+    [self.view addSubview:_imageView];
+    self.pointsLabel = [[UILabel alloc] initWithFrame:CGRectMake(40, 450, 300, 80)];
+    self.pointsLabel.numberOfLines = 0;
+    self.pointsLabel.textColor = [UIColor blackColor];
+    [self.view addSubview:self.pointsLabel];
 }
 
 - (void)viewDidAppear:(BOOL)animated {
     
     self.rectView = [[PointsSpreadView alloc] initWithFrame:CGRectMake(0, 150, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.width/16*9)];
     self.rectView.backgroundColor = [UIColor lightGrayColor];
+    self.rectView.delegate = self;
     [self.view addSubview:self.rectView];
 
 }
 
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    [self.rectView createMaskArea];
-}
 
 - (void)clearAllPointsHandle {
     [self.rectView clearAllPoints];
@@ -68,5 +75,14 @@
 
 - (void)removeSelectPointHandle {
     [self.rectView deletePoint];
+}
+
+
+- (void)spreadView:(PointsSpreadView *)pointSpreadView SelectRectPointsArray:(NSArray *)array errorState:(SpreadState)errorState {
+    NSString *valueString = @"";
+    for (NSInteger i = 0; i < array.count; i ++) {
+        valueString = [NSString stringWithFormat:@"%@ x:%0.2f y:%0.2f ",valueString,[array[i][0] floatValue],[array[i][0] floatValue]];
+    }
+    _pointsLabel.text = valueString;
 }
 @end
