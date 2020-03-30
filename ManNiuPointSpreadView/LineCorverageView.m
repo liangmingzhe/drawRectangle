@@ -200,22 +200,49 @@
 //选中点处理
 - (BOOL)selectPoint:(CGPoint)point {
     __block BOOL isSelect = NO;
+    __block float distance = [self distanceFromPoint:[[_pointsArray firstObject] getPoint] ToPoint:point];
     [_pointsArray enumerateObjectsUsingBlock:^(MNPoint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
         if(CGRectContainsPoint([obj getRect], point)) {
-            if ([self distanceFromPoint:[obj getPoint] ToPoint:point] < kMiniDistance) {
+            float ds = [self distanceFromPoint:[obj getPoint] ToPoint:point];
+            obj.isSelected = NO;
+            if (ds < kMiniDistance) {
+                //如果遍历的是在点的响应区域内
                 if (isSelect == NO) {
-                    _offset = CGPointMake([obj getPoint].x - point.x, [obj getPoint].y - point.y);
-                    self.movePoint = obj;
-                    isSelect = YES;
-                    obj.isSelected = YES;
+                    if (distance >= ds) {
+                        distance = ds;
+                        _offset = CGPointMake([obj getPoint].x - point.x, [obj getPoint].y - point.y);
+                        self.movePoint = obj;
+                        NSLog(@"Select Point :%ld",(long)obj.tag);
+                        isSelect = YES;
+                        obj.isSelected = YES;
+                    }else {
+                        obj.isSelected = NO;
+                    }
                 }else {
-                    obj.isSelected = NO;
+                    if (distance > ds) {
+                        distance = ds;
+                        _offset = CGPointMake([obj getPoint].x - point.x, [obj getPoint].y - point.y);
+                        self.movePoint = obj;
+                        NSLog(@"Select Point :%ld",(long)obj.tag);
+                        isSelect = YES;
+                        obj.isSelected = YES;
+                        
+                    }else {
+                        obj.isSelected = NO;
+                    }
                 }
             }else {
                 obj.isSelected = NO;
             }
         }else {
-                obj.isSelected = NO;
+            obj.isSelected = NO;
+        }
+    }];
+    [_pointsArray enumerateObjectsUsingBlock:^(MNPoint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+        if (obj.tag != self.movePoint.tag) {
+            obj.isSelected = NO;
+        }else {
+            obj.isSelected = YES;
         }
     }];
     return isSelect;
