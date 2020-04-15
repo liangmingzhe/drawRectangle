@@ -8,7 +8,7 @@
 
 #import "LineCorverageView.h"
 
-#define kMiniDistance 50
+#define kMiniDistance 30
 #define kMaxPointsNum 8
 #define gridValue 10
 #define UIColorFromRGB(rgbValue) ([UIColor colorWithRed:((float)((rgbValue & 0xFF0000) >> 16))/255.0 green:((float)((rgbValue & 0xFF00) >> 8))/255.0 blue:((float)(rgbValue & 0xFF))/255.0 alpha:1.0])
@@ -54,7 +54,9 @@
     }
     _movePoint.tb.text = @"";
     [_movePoint.tb removeFromSuperview];
-    [_pointsArray removeObjectAtIndex:(_movePoint.tag - 1)];
+    if(_pointsArray.count > 0) {
+        [_pointsArray removeObjectAtIndex:(_movePoint.tag - 1)];
+    }
     _movePoint = nil;
     
     for (NSInteger i = 0; i < _pointsArray.count;i++) {
