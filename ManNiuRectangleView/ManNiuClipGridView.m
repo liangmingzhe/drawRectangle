@@ -45,16 +45,18 @@
     if (CGRectEqualToRect(clipRect, self.clipRect)) {
         return;
     }
-    CGRect realRect = CGRectMake(clipRect.origin.x - _contentInsect, clipRect.origin.y - _contentInsect, clipRect.size.width + _contentInsect * 2,clipRect.size.height + _contentInsect * 2 );
-    if (self.bounds.size.width != clipRect.size.width || self.bounds.size.height != clipRect.size.height ) {
+    CGRect realRect = CGRectMake(clipRect.origin.x - _contentInsect, clipRect.origin.y - _contentInsect, clipRect.size.width + _contentInsect * 2, clipRect.size.height + _contentInsect * 2);
+    
+    // 优化：只在尺寸改变时才重绘，位置改变时直接更新frame即可
+    BOOL sizeChanged = (ABS(self.bounds.size.width - clipRect.size.width) > 0.1 || ABS(self.bounds.size.height - clipRect.size.height) > 0.1);
+    self.frame = realRect;
+    
+    if (sizeChanged) {
         [self setNeedsDisplay];
     }
-    self.frame = realRect;
 }
 
 - (void)drawRect:(CGRect)rect {
-    NSLog(@"重新绘制");
-    
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSetFillColorWithColor(context, _color.CGColor);
     CGContextSetStrokeColorWithColor(context, _color.CGColor);
@@ -100,7 +102,7 @@
     //画网格竖线
     if (_columnLinesNumber) {
         CGFloat columnGap = frame.size.width / (_columnLinesNumber + 1);
-        int8_t maxIndex = _rowLinesNumber + 1;
+        int8_t maxIndex = _columnLinesNumber + 1;
         for (int8_t i = 0; i != maxIndex; i++) {
             CGFloat lineX = columnGap * i + upLeft.x;
             CGContextMoveToPoint(context, lineX, upRight.y);

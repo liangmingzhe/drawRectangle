@@ -24,7 +24,7 @@
 {
     _imageView = [[UIImageView alloc] initWithFrame:self.bounds];
     [self addSubview:_imageView];
-    _imageView.image = [UIImage imageNamed:@"Hot"];
+    _imageView.image = [UIImage imageNamed:@"hot"];
     _clipGridView = [[ManNiuClipGridView alloc] initWithFrame:self.bounds];
     [self addSubview:_clipGridView];
     _clipGridView.backgroundColor = [UIColor clearColor];
@@ -35,10 +35,8 @@
 //开始
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     [super touchesBegan:touches withEvent:event];
-    printf("touch began");
     UITouch *touch = [touches anyObject];
     CGPoint point = [touch locationInView:self];
-    _touchBeganPoint = CGPointZero;
     _touchMoveCount = 0;
     _touchBeganPoint = point;
     _clipGridOriginFrame = _clipGridView.clipRect;
@@ -50,7 +48,6 @@
         CGPoint gridCenter = _clipGridView.center;
     
         if (ABS(gridCenter.x - point.x) < _clipGridView.frame.size.width / 4.0 && ABS(gridCenter.y - point.y) < _clipGridView.frame.size.height / 4.0) {
-            printf("中央区域");
             _currentImageQuadrant = ImgClipOriginArea;
             return;
         }
@@ -86,7 +83,6 @@
     ImgClipQuadrant blockCurrentImageQuadrant = _currentImageQuadrant;
     CGRect blockClipGridOriginFrame = _clipGridOriginFrame;
     CGRect imageViewFrame = _imageView.frame;
-    CGFloat blockBevelEdgeRatio = _bevelEdgeRatio;
     
     UITouch *touch = [touches anyObject];
     CGPoint point = [touch locationInView:self];
@@ -181,43 +177,43 @@
             bottom = newBottom;
             left = newLeft;
             right = newRight;
-            if (self->_isMoving) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    self->_clipGridView.center = CGPointMake( (left + right) / 2 ,(top + bottom) / 2);
-                });
-            }
+            // 直接更新center，无需异步调用，因为已经在主线程
+            self->_clipGridView.center = CGPointMake((left + right) / 2, (top + bottom) / 2);
 //            CGFloat ratio = self->_image.size.width / self->_imageView.frame.size.width;
 //            self->_imageClipRect = CGRectMake((clipRect.origin.x - self->_imageView.frame.origin.x) * ratio, (clipRect.origin.y - self->_imageView.frame.origin.y) * ratio, clipRect.size.width * ratio, clipRect.size.height * ratio);
             return;
-        }
-            break;
         default:
             return;
-            break;
     }
     
     //根据新的 top bottom left right 设置
-    //确保四个数值全部大于0，且不超过 _imageView的范围
-    top < 0 ? top = 0:top;
-    left < 0 ? left = 0:left;
-    right < 0 ? right = 0:right;
-    bottom < 0 ? bottom = 0:bottom;
-    
-    height = ABS(bottom - top);
-    width = ABS(right - left);
+    //确保不超过 _imageView的范围
     CGFloat x = MIN(left, right);
-    CGFloat y = MIN(top,bottom);
+    CGFloat y = MIN(top, bottom);
+    width = ABS(right - left);
+    height = ABS(bottom - top);
     
-    x < imageViewFrame.origin.x ? x = imageViewFrame.origin.x : (x);
-    y < imageViewFrame.origin.y ? y = imageViewFrame.origin.y : (y);
-    (height + y) > (imageViewFrame.origin.y + imageViewFrame.size.height) ? height = (imageViewFrame.origin.y + imageViewFrame.size.height - y) : (height);
-    (width + x) > (imageViewFrame.origin.x + imageViewFrame.size.width) ? width = (imageViewFrame.origin.x + imageViewFrame.size.width - x) : (width);
+    // 边界限制，确保裁剪区域在imageView内
+    if (x < imageViewFrame.origin.x) {
+        width = width - (imageViewFrame.origin.x - x);
+        x = imageViewFrame.origin.x;
+    }
+    if (y < imageViewFrame.origin.y) {
+        height = height - (imageViewFrame.origin.y - y);
+        y = imageViewFrame.origin.y;
+    }
+    if (x + width > imageViewFrame.origin.x + imageViewFrame.size.width) {
+        width = imageViewFrame.origin.x + imageViewFrame.size.width - x;
+    }
+    if (y + height > imageViewFrame.origin.y + imageViewFrame.size.height) {
+        height = imageViewFrame.origin.y + imageViewFrame.size.height - y;
+    }
     
-    //最后修正一下长宽比
+    // 确保最小尺寸
+    if (width < 0) width = 0;
+    if (height < 0) height = 0;
     
-    //不超过_imageView的范围
     clipRect = CGRectMake(x, y, width, height);
-    
     _clipGridView.clipRect = clipRect;
 //
 //    CGFloat ratio = self->_image.size.width / self->_imageView.frame.size.width;

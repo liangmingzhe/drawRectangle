@@ -47,7 +47,7 @@
     [self.createAreaBtn addTarget:self action:@selector(createAreaHandle) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.createAreaBtn];
     _imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 150, [UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.width/16*9)];
-    _imageView.image = [UIImage imageNamed:@"Hot"];
+    _imageView.image = [UIImage imageNamed:@"hot"];
     [self.view addSubview:_imageView];
     self.pointsLabel = [[UILabel alloc] initWithFrame:CGRectMake(40, 450, 300, 80)];
     self.pointsLabel.numberOfLines = 0;
@@ -80,7 +80,7 @@
 - (void)spreadView:(PointsSpreadView *)pointSpreadView SelectRectPointsArray:(NSArray *)array errorState:(SpreadState)errorState {
     NSString *valueString = @"";
     for (NSInteger i = 0; i < array.count; i ++) {
-        valueString = [NSString stringWithFormat:@"%@ x:%0.2f y:%0.2f ",valueString,[array[i][0] floatValue],[array[i][0] floatValue]];
+        valueString = [NSString stringWithFormat:@"%@ x:%0.2f y:%0.2f ",valueString,[array[i][0] floatValue],[array[i][1] floatValue]];
     }
     _pointsLabel.text = valueString;
 }

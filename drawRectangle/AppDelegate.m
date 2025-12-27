@@ -20,11 +20,11 @@
     
     _window = [[UIWindow alloc]initWithFrame:[UIScreen mainScreen].bounds];
     _window.backgroundColor = [UIColor whiteColor];
+    _window.opaque = YES;
     TestViewController *vc = [[TestViewController alloc]init];
     vc.view.backgroundColor = [UIColor whiteColor];
-    self.window.opaque = YES;
-    [self.window makeKeyAndVisible];
     _window.rootViewController = vc;
+    [_window makeKeyAndVisible];
     
     return YES;
 }

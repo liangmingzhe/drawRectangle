@@ -140,9 +140,6 @@
     CGContextSetFillColorWithColor(ctx, aColor.CGColor);
     CGContextDrawPath(ctx, kCGPathFillStroke);
     
-    CGContextStrokePath(ctx); //直接在图形上下文中渲染路径
-    CGContextDrawPath(ctx, kCGPathFillStroke);
-    
     
     //画圆
     for (MNPoint * point in _pointsArray) {
@@ -263,13 +260,12 @@
 
 - (void)moveShapeWithDeltaX:(float)x deltaY:(float)y {
     for (MNPoint *p in _pointsArray) {
-        
         p.x = p.x + x;
         p.y = p.y + y;
-        [p.tb setFrame:CGRectMake(p.tb.frame.origin.x + x, p.tb.frame.origin.y + y, CGRectGetWidth(p.tb.frame), CGRectGetHeight(p.tb.frame))];
+        // 更新标签的中心位置，而不是frame，这样更准确
+        p.tb.center = CGPointMake(p.x, p.y);
     }
     [self setNeedsDisplay];
-
 }
 - (CGFloat)distanceFromPoint:(CGPoint)sou ToPoint:(CGPoint)des{
     return sqrt(pow(des.x-sou.x,2)+pow(des.y-sou.y,2));

@@ -43,6 +43,6 @@
 }
 
 - (CGRect)getRect {
-    return CGRectMake(MAX(self.x-40, 0), MAX(self.y-40, 0), self.x+40, self.y+40);
+    return CGRectMake(MAX(self.x-40, 0), MAX(self.y-40, 0), 80, 80);
 }
 @end

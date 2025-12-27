@@ -11,11 +11,8 @@
 #import "MNPoint.h"
 #define gridValue 10
 
-@interface PointsSpreadView() {
-    CGContextRef ctx;
-}
+@interface PointsSpreadView()
 @property (nonatomic ,strong) UITapGestureRecognizer *tapGestureRecognizer;
-@property (nonatomic ,strong) UILongPressGestureRecognizer *longTapGestureRecognizer;
 @property (nonatomic ,strong) LineCorverageView *coverageView;
 @property (nonatomic ,assign) CGPoint touchBeganPoint;
 @property (nonatomic ,assign) BOOL isMove;
@@ -68,11 +65,10 @@
         [_coverageView.pointsArray addObject:p];
     }
     [_coverageView setNeedsDisplay];
-    NSLog(@"");
 }
 
 - (void)createMaskArea {
-    if (_coverageView.pointsArray.count < 3 || _coverageView.pointsArray == nil) {
+    if (_coverageView.pointsArray.count < 3) {
         if ([self.delegate respondsToSelector:@selector(spreadView:SelectRectPointsArray:errorState:)]) {
             [self.delegate spreadView:self SelectRectPointsArray:@[] errorState:SpreadStatePointsLess];
         }
@@ -87,7 +83,6 @@
         }
         BOOL isCross = [self checkCrossArea:_coverageView.pointsArray];
         if (isCross == YES) {
-            NSLog(@"isCross = YES");
             if ([self.delegate respondsToSelector:@selector(spreadView:SelectRectPointsArray:errorState:)]) {
                 [self.delegate spreadView:self SelectRectPointsArray:@[] errorState:SpreadStateAreaCross];
             }
@@ -95,7 +90,6 @@
             self.coverageView.pointState = PointStateEdit;
             self.coverageView.areaState = AreaStateIllegal;
         }else {
-            NSLog(@"isCross = NO");
             if ([self.delegate respondsToSelector:@selector(spreadView:SelectRectPointsArray:errorState:)]) {
                 [self.delegate spreadView:self SelectRectPointsArray:array errorState:SpreadStateNormal];
             }
@@ -163,24 +157,27 @@
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     UITouch *touch = [touches anyObject];
     CGPoint p = [touch locationInView:self];
-    _direction = CGPointMake(p.x - _lastTouchPoint.x,p.y - _lastTouchPoint.y);
-    [self moveWithTouch:touches withEvent:event];
-    BOOL isCross = [self checkCrossArea:_coverageView.pointsArray];
+    _direction = CGPointMake(p.x - _lastTouchPoint.x, p.y - _lastTouchPoint.y);
     
-    if (isCross == YES) {
-        self.coverageView.areaState = AreaStateIllegal;
-    }else {
-        self.coverageView.areaState = AreaStateLegal;
+    // 先执行移动
+    [self moveWithTouch:touches withEvent:event];
+    
+    // 只在有足够点数时才检查交叉（优化性能）
+    if (_coverageView.pointsArray.count >= 3) {
+        BOOL isCross = [self checkCrossArea:_coverageView.pointsArray];
+        AreaState newState = isCross ? AreaStateIllegal : AreaStateLegal;
+        
+        // 只在状态改变时更新，减少不必要的重绘
+        if (self.coverageView.areaState != newState) {
+            self.coverageView.areaState = newState;
+            [self.coverageView setNeedsDisplay];
+        }
     }
 }
 
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    CGPoint p = [touch locationInView:self];
-    _direction = CGPointMake(p.x - _lastTouchPoint.x,p.y - _lastTouchPoint.y);
-
-    [self moveWithTouch:touches withEvent:event];
     _isMove = NO;
+    _coverageView.pointState = PointStateEdit;
     BOOL isCross = [self checkCrossArea:_coverageView.pointsArray];
     
     if (isCross == YES) {
@@ -188,16 +185,12 @@
     }else {
         self.coverageView.areaState = AreaStateLegal;
     }
-
+    [self.coverageView setNeedsDisplay];
 }
 
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
-    UITouch *touch = [touches anyObject];
-    CGPoint p = [touch locationInView:self];
-    _direction = CGPointMake(p.x - _lastTouchPoint.x,p.y - _lastTouchPoint.y);
-
-    [self moveWithTouch:touches withEvent:event];
     _isMove = NO;
+    _coverageView.pointState = PointStateEdit;
     BOOL isCross = [self checkCrossArea:_coverageView.pointsArray];
     
     if (isCross == YES) {
@@ -205,92 +198,67 @@
     }else {
         self.coverageView.areaState = AreaStateLegal;
     }
-    
+    [self.coverageView setNeedsDisplay];
 }
 
 - (void)moveWithTouch:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     UITouch *touch = [touches anyObject];
-    __block CGPoint p = [touch locationInView:self];
-    __block BOOL xTouchZero = NO;
-    __block BOOL xTouchWith = NO;
-    __block BOOL yTouchZero = NO;
-    __block BOOL yTouchWith = NO;
-    //增加一个判断 如果拖动到达边界
-    __block BOOL isTouchEdged = NO;
-    [_coverageView.pointsArray enumerateObjectsUsingBlock:^(MNPoint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-        if (obj.x < 0 && _direction.x < 0) {
-            if (obj.y < 0 && _direction.y < 0 && obj.y > self.frame.size.height && _direction.y > 0) {
-                isTouchEdged = YES;
-                *stop = YES;
-            }else {
-                xTouchZero = YES;
-            }
-        }
-        else if (obj.x > self.frame.size.width && _direction.x > 0) {
-            if ( obj.y > self.frame.size.height && _direction.y > 0 && obj.y < 0 && _direction.y < 0 ) {
-                isTouchEdged = YES;
-                *stop = YES;
-            }else {
-                xTouchWith = YES;
-            }
-
-        }
-        
-        if (obj.y < 0 && _direction.y < 0) {
-            if (obj.x < 0 && _direction.x < 0 && obj.x > self.frame.size.width && _direction.x > 0) {
-                isTouchEdged = YES;
-                *stop = YES;
-            }else {
-                yTouchZero = YES;
-            }
-        }
-        else if (obj.y > self.frame.size.height && _direction.y > 0) {
-            if ( obj.x > self.frame.size.width && _direction.x > 0 && obj.x < 0 && _direction.x < 0 ) {
-                isTouchEdged = YES;
-                *stop = YES;
-            }else {
-                yTouchWith = YES;
-            }
-
-        }
-
-    }];
+    CGPoint currentPoint = [touch locationInView:self];
     
-    if (isTouchEdged == YES) {
-        return;
-    }
-    
+    // 移动单个点
     if (_isMove) {
-        UITouch *touch = [touches anyObject];
-        CGFloat x = MIN(MAX([touch locationInView:self].x+_offset.x, 0), CGRectGetWidth(self.bounds));
-        CGFloat y = MIN(MAX([touch locationInView:self].y+_offset.y, 0), CGRectGetHeight(self.bounds));
+        CGFloat x = MIN(MAX(currentPoint.x + _offset.x, 0), CGRectGetWidth(self.bounds));
+        CGFloat y = MIN(MAX(currentPoint.y + _offset.y, 0), CGRectGetHeight(self.bounds));
         [self.coverageView movePointTo:CGPointMake(x, y)];
         _coverageView.pointState = PointStateEdit;
-        
     }
     
-    if (_coverageView.pointState == PointStateShapeMove) {
-        if(_isInPloygon == YES) {
-            UITouch *touch = [touches anyObject];
-            CGPoint p = [touch locationInView:self];
-            
-            
-            float deltaX = p.x - self.touchBeganPoint.x;
-            float deltaY = p.y - self.touchBeganPoint.y;
-            self.touchBeganPoint = p;
-            
-            if (((_direction.x > 0) && (xTouchWith == YES)) || ((_direction.x < 0) && (xTouchZero == YES))) {
-                deltaX = 0;
-            }
-            if (((_direction.y > 0) && (yTouchWith == YES)) || ((_direction.y < 0) && (yTouchZero == YES))) {
-                deltaY = 0;
-            }
-            NSLog(@"delta --- deltaX:%0.2f deltaY:%0.2f",deltaX,deltaY);
+    // 移动整个形状
+    if (_coverageView.pointState == PointStateShapeMove && _isInPloygon) {
+        // 使用增量计算，基于上一次的位置，而不是初始位置，使拖动更流畅
+        CGFloat deltaX = currentPoint.x - _lastTouchPoint.x;
+        CGFloat deltaY = currentPoint.y - _lastTouchPoint.y;
+        
+        // 检查边界，防止形状移出视图
+        __block BOOL canMoveX = YES;
+        __block BOOL canMoveY = YES;
+        __block CGFloat minX = CGFLOAT_MAX;
+        __block CGFloat maxX = CGFLOAT_MIN;
+        __block CGFloat minY = CGFLOAT_MAX;
+        __block CGFloat maxY = CGFLOAT_MIN;
+        
+        [_coverageView.pointsArray enumerateObjectsUsingBlock:^(MNPoint * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
+            minX = MIN(minX, obj.x);
+            maxX = MAX(maxX, obj.x);
+            minY = MIN(minY, obj.y);
+            maxY = MAX(maxY, obj.y);
+        }];
+        
+        // 检查X方向边界
+        if (deltaX < 0 && minX + deltaX < 0) {
+            deltaX = -minX;
+            canMoveX = NO;
+        } else if (deltaX > 0 && maxX + deltaX > self.frame.size.width) {
+            deltaX = self.frame.size.width - maxX;
+            canMoveX = NO;
+        }
+        
+        // 检查Y方向边界
+        if (deltaY < 0 && minY + deltaY < 0) {
+            deltaY = -minY;
+            canMoveY = NO;
+        } else if (deltaY > 0 && maxY + deltaY > self.frame.size.height) {
+            deltaY = self.frame.size.height - maxY;
+            canMoveY = NO;
+        }
+        
+        // 只有在可以移动时才执行移动
+        if (canMoveX || canMoveY) {
             [self.coverageView moveShapeWithDeltaX:deltaX deltaY:deltaY];
-
         }
     }
-    _lastTouchPoint = p;    //  处理完数据将当前点保存为上一个点以便能及时判断下一次手势的方向
+    
+    _lastTouchPoint = currentPoint;
 }
 
 - (void)tap:(UIGestureRecognizer *)sender {
@@ -304,9 +272,6 @@
         point = [self gridPointAdjust:point];
         [self.coverageView addPointWithCGPoint:point];
     }
-}
-- (void)longTap:(UILongPressGestureRecognizer *)sender {
-    NSLog(@"");
 }
 
 
@@ -378,7 +343,6 @@
     }
     for (int i = 0; i < array.count - 3; i ++) {
         for (int j = i + 2; j < array.count - 1; j ++) {
-            NSLog(@"Check Cross Line:%d Line:%d",i+1,i+3);
             BOOL result = [self checkCross:array[i] p2:array[i + 1] q1:array[j] q2:array[j + 1]];
             if(result == YES) {
                 return YES;
